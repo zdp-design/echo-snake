@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b0f17" />
+    <meta name="description" content="ECHO 回声贪吃蛇：原生 Canvas 单机小游戏。吃果连击、长按倒带穿越回放，每 10 果三选一成长强化，越玩越能遇见稀有力量。" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <!-- 社交/微信分享卡片 -->
+    <meta property="og:site_name" content="ECHO · 回声贪吃蛇" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://zdp-design.github.io/echo-snake/" />
+    <meta property="og:title" content="ECHO 回声贪吃蛇 · 时间倒带，一命到底" />
+    <meta property="og:description" content="吃果连击 × 长按倒带穿越回放 × 每 10 果三选一成长强化。在微信里点开即玩，无需下载。" />
+    <meta property="og:image" content="https://zdp-design.github.io/echo-snake/share-cover.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <title>ECHO · 回声贪吃蛇</title>
+    <script type="module" crossorigin src="./assets/index-DDwY1hFF.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-uUhNPeUs.css">
+  </head>
+  <body>
+    <div id="wrap">
+      <canvas
+        id="game"
+        role="img"
+        aria-label="回声贪吃蛇游戏画面：键盘方向键或 WASD 移动，长按空格键倒带"
+      ></canvas>
+
+      <!-- 进行中的悬浮按钮 -->
+      <button id="btn-pause" class="float-btn hidden" type="button" aria-label="暂停">❚❚</button>
+      <button id="btn-rewind" class="rewind-btn hidden" type="button">
+        <span class="rewind-ico">⟲</span><span class="rewind-txt">按住倒带</span>
+      </button>
+      <button id="btn-boost" class="boost-btn hidden" type="button">
+        <span class="boost-ico">⚡</span><span class="boost-txt">冲刺</span>
+      </button>
+
+      <!-- 主菜单 -->
+      <section id="menu" class="overlay">
+        <div class="panel">
+          <h1 class="logo">ECHO</h1>
+          <p class="sub">回声贪吃蛇 · 时间倒带 · 一命到底</p>
+          <p class="best-line">最高分 <span id="menu-best">0</span></p>
+          <div class="btn-row">
+            <button id="btn-start" class="btn primary" type="button">开始游戏</button>
+            <button id="btn-sound-menu" class="btn ghost" type="button">音效：开</button>
+          </div>
+          <div class="btn-row slim">
+            <button id="btn-share" class="btn share-btn" type="button">分享给朋友</button>
+          </div>
+          <div class="hints">
+            <p><b>移动：</b>方向键 / WASD / 触屏滑动</p>
+            <p><b>倒带：</b>长按 <span class="kbd">空格</span> 或右下角「按住倒带」按钮，蛇会沿轨迹回放，免疫撞墙撞身</p>
+            <p><b>冲刺：</b>按住 <span class="kbd">Shift</span> 或「⚡冲刺」加速狂吃，但会<span class="chip danger">燃烧能量</span>——冲得越快，回退的余地越少</p>
+            <p><b>倒带能量：</b>开局自带，吃<span class="chip golden">金色能量果</span>补充。吃到普通果实触发<span class="chip">连击</span>翻倍得分</p>
+            <p><b>成长：</b>每吃掉 <span class="chip">10</span> 颗果实弹出一次三选一强化；越到后段越可能遇见 <span class="chip golden">稀有</span>强化</p>
+            <p><b>暂停：</b><span class="kbd">P</span> / <span class="kbd">Esc</span> / 右上角按钮</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 暂停 -->
+      <section id="pause" class="overlay hidden">
+        <div class="panel small">
+          <h2>暂停</h2>
+          <p class="stat-line" id="pause-info">得分 0 · 等级 1 · 能量 0/90</p>
+          <div class="btn-row">
+            <button id="btn-resume" class="btn primary" type="button">继续</button>
+            <button id="btn-restart" class="btn" type="button">重新开始</button>
+            <button id="btn-menu" class="btn ghost" type="button">回到菜单</button>
+          </div>
+          <div class="btn-row slim">
+            <button id="btn-sound-pause" class="btn ghost" type="button">音效：开</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 结算 -->
+      <section id="over" class="overlay hidden">
+        <div class="panel small">
+          <h2 id="over-title">游戏结束</h2>
+          <p class="score-line">得分 <span id="over-score">0</span></p>
+          <p class="best-line">
+            最高分 <span id="over-best">0</span>
+            <span id="over-record" class="record hidden">新纪录！</span>
+          </p>
+          <p class="over-hint" id="over-hint"></p>
+          <p class="stat-line">吃到果实 <span id="over-foods">0</span> · 等级 <span id="over-level">1</span> · 最高连击 x<span id="over-chain">1</span></p>
+          <p class="gold-stat">金色能量果 ×<span id="over-gold">0</span></p>
+          <p class="buff-line hidden" id="over-buffs"></p>
+          <div class="btn-row">
+            <button id="btn-retry" class="btn primary" type="button">再来一局</button>
+            <button id="btn-over-share" class="btn" type="button">分享给朋友</button>
+            <button id="btn-over-menu" class="btn ghost" type="button">回到菜单</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 单局成长（三选一强化） -->
+      <section id="pick" class="overlay hidden" role="dialog" aria-label="选择成长强化">
+        <div class="panel small pick-panel">
+          <h2>成长强化</h2>
+          <p class="pick-sub">吞下一份力量，继续前行</p>
+          <div id="pick-cards" class="pick-cards"></div>
+          <p class="pick-hint">按 <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> 或点击卡片选择</p>
+        </div>
+      </section>
+
+      <!-- 分享海报（结算 / 菜单共用弹层：长按保存识别，或复制链接） -->
+      <section id="share" class="overlay hidden" role="dialog" aria-label="分享海报">
+        <div class="panel small share-panel">
+          <h2>分享给朋友</h2>
+          <img id="share-poster" class="share-poster" alt="ECHO 回声贪吃蛇分享海报" draggable="false" />
+          <p class="share-tip">长按图片保存 / 识别二维码，发给朋友即点即玩；或复制链接分享。</p>
+          <div class="btn-row">
+            <button id="btn-share-copy" class="btn primary" type="button">复制链接</button>
+            <button id="btn-share-close" class="btn ghost" type="button">关闭</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 轻提示（复制结果等即时反馈） -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  </body>
+</html>
