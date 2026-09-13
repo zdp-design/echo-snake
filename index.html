@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en" data-lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -7,36 +7,75 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0b0f17" />
-    <meta name="description" content="ECHO 回声贪吃蛇：原生 Canvas 单机小游戏。吃果连击、长按倒带穿越回放，每 10 果三选一成长强化，越玩越能遇见稀有力量。" />
+    <meta
+      name="description"
+      content="ECHO · Rewind Snake — a native-canvas arcade game with no engine and no runtime dependencies. Chain fruit for multipliers, hold to rewind time, and pick 1 of 3 upgrades every 10 fruit."
+    />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <title>ECHO · Rewind Snake</title>
+
+    <!-- 双语首屏（v0.12 海外版）
+         语言判定必须在下发首帧前完成，因此内联在这里（内联脚本无法 import src/i18n.ts）。
+         中文文案与英文文案同时存在于本文件，由 html[data-lang] + 下面这段样式控制显隐：
+         纯 CSS 切换，不依赖 JS 时序，因此不存在「先渲染英文再跳中文」的闪现。
+         判定规则与 src/i18n.ts 的 detect() 必须保持一致，改动需同步。 -->
+    <style>
+      html[data-lang='en'] .i18n-zh {
+        display: none;
+      }
+      html[data-lang='zh'] .i18n-en {
+        display: none;
+      }
+    </style>
+    <script>
+      (function () {
+        var l;
+        try {
+          var q = new URLSearchParams(location.search).get('lang');
+          l = q === 'en' || q === 'zh' ? q : /^zh/i.test(navigator.language || 'en') ? 'zh' : 'en';
+        } catch (e) {
+          l = 'en';
+        }
+        var root = document.documentElement;
+        root.setAttribute('data-lang', l);
+        root.lang = l === 'zh' ? 'zh-CN' : 'en';
+        // 标签页标题同样在首帧前定版（本脚本位于 <title> 之后，故能覆盖它）
+        document.title = l === 'zh' ? 'ECHO · 回声贪吃蛇' : 'ECHO · Rewind Snake';
+      })();
+    </script>
 
     <!-- 访问统计（Umami Cloud · 无 cookie / 不采 PII · 静默降级）
          data-website-id：Umami Cloud 站点 ID（Hobby 免费档 100k 事件/月）
-         data-domains：锁死线上域名，本地 vite dev / preview 不打点，避免污染数据
+         data-domains：上报域名白名单（逗号分隔，逐项与 location.hostname 比对）。
+           自有域名之外必须列入 itch.io 的运行域，否则 itch 渠道一条数据都收不到。
          data-tag：版本分组，改版时同步更新，用于跨版本对比漏斗 -->
     <script
       defer
       src="https://cloud.umami.is/script.js"
       data-website-id="bec67eda-eb37-4317-8251-f42e3ca38091"
-      data-domains="zdp-design.github.io"
-      data-tag="v0.11"
+      data-domains="zdp-design.github.io,html-classic.itch.zone,html.itch.zone"
+      data-tag="v0.12"
     ></script>
 
-    <!-- 社交/微信分享卡片 -->
-    <meta property="og:site_name" content="ECHO · 回声贪吃蛇" />
+    <!-- 社交分享卡片：静态标签无法按语言切换（微信抓取不执行 JS），故按海外优先写英文 -->
+    <meta property="og:site_name" content="ECHO" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://zdp-design.github.io/echo-snake/" />
-    <meta property="og:title" content="ECHO 回声贪吃蛇 · 时间倒带，一命到底" />
-    <meta property="og:description" content="吃果连击 × 长按倒带穿越回放 × 每 10 果三选一成长强化。在微信里点开即玩，无需下载。" />
+    <meta property="og:title" content="ECHO · Rewind Snake — rewind time, one life" />
+    <meta
+      property="og:description"
+      content="Chain fruit for multipliers, hold to rewind and replay your own trail, and pick 1 of 3 upgrades every 10 fruit. Native canvas, no engine, plays instantly in your browser."
+    />
     <meta property="og:image" content="https://zdp-design.github.io/echo-snake/share-cover.png" />
     <meta property="og:image:width" content="1280" />
     <meta property="og:image:height" content="720" />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_CN" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <title>ECHO · 回声贪吃蛇</title>
-    <script type="module" crossorigin src="./assets/index-fvuEKwSg.js"></script>
+    <script type="module" crossorigin src="./assets/index-BTGlsgl0.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-uUhNPeUs.css">
   </head>
   <body>
@@ -44,38 +83,90 @@
       <canvas
         id="game"
         role="img"
-        aria-label="回声贪吃蛇游戏画面：键盘方向键或 WASD 移动，长按空格键倒带"
+        aria-label="Echo Snake game area: move with arrow keys or WASD, hold Space to rewind"
       ></canvas>
 
       <!-- 进行中的悬浮按钮 -->
-      <button id="btn-pause" class="float-btn hidden" type="button" aria-label="暂停">❚❚</button>
+      <button id="btn-pause" class="float-btn hidden" type="button" aria-label="Pause">❚❚</button>
       <button id="btn-rewind" class="rewind-btn hidden" type="button">
-        <span class="rewind-ico">⟲</span><span class="rewind-txt">按住倒带</span>
+        <span class="rewind-ico">⟲</span><span class="rewind-txt i18n-zh">按住倒带</span
+        ><span class="rewind-txt i18n-en">Hold</span>
       </button>
       <button id="btn-boost" class="boost-btn hidden" type="button">
-        <span class="boost-ico">⚡</span><span class="boost-txt">冲刺</span>
+        <span class="boost-ico">⚡</span><span class="boost-txt i18n-zh">冲刺</span
+        ><span class="boost-txt i18n-en">Boost</span>
       </button>
 
       <!-- 主菜单 -->
       <section id="menu" class="overlay">
         <div class="panel">
           <h1 class="logo">ECHO</h1>
-          <p class="sub">回声贪吃蛇 · 时间倒带 · 一命到底</p>
-          <p class="best-line">最高分 <span id="menu-best">0</span></p>
+          <p class="sub">
+            <span class="i18n-zh">回声贪吃蛇 · 时间倒带 · 一命到底</span>
+            <span class="i18n-en">Rewind Snake · Bend Time · One Life</span>
+          </p>
+          <p class="best-line">
+            <span class="i18n-zh">最高分 </span><span class="i18n-en">Best </span
+            ><span id="menu-best">0</span>
+          </p>
           <div class="btn-row">
-            <button id="btn-start" class="btn primary" type="button">开始游戏</button>
-            <button id="btn-sound-menu" class="btn ghost" type="button">音效：开</button>
+            <button id="btn-start" class="btn primary" type="button">
+              <span class="i18n-zh">开始游戏</span><span class="i18n-en">Play</span>
+            </button>
+            <button id="btn-sound-menu" class="btn ghost" type="button">
+              <span class="i18n-zh">音效：开</span><span class="i18n-en">Sound: On</span>
+            </button>
           </div>
           <div class="btn-row slim">
-            <button id="btn-share" class="btn share-btn" type="button">分享给朋友</button>
+            <button id="btn-share" class="btn share-btn" type="button">
+              <span class="i18n-zh">分享给朋友</span><span class="i18n-en">Share</span>
+            </button>
           </div>
           <div class="hints">
-            <p><b>移动：</b>方向键 / WASD / 触屏滑动</p>
-            <p><b>倒带：</b>长按 <span class="kbd">空格</span> 或右下角「按住倒带」按钮，蛇会沿轨迹回放，免疫撞墙撞身</p>
-            <p><b>冲刺：</b>按住 <span class="kbd">Shift</span> 或「⚡冲刺」加速狂吃，但会<span class="chip danger">燃烧能量</span>——冲得越快，回退的余地越少</p>
-            <p><b>倒带能量：</b>开局自带，吃<span class="chip golden">金色能量果</span>补充。吃到普通果实触发<span class="chip">连击</span>翻倍得分</p>
-            <p><b>成长：</b>每吃掉 <span class="chip">10</span> 颗果实弹出一次三选一强化；越到后段越可能遇见 <span class="chip golden">稀有</span>强化</p>
-            <p><b>暂停：</b><span class="kbd">P</span> / <span class="kbd">Esc</span> / 右上角按钮</p>
+            <p>
+              <b><span class="i18n-zh">移动：</span><span class="i18n-en">Move:</span></b
+              ><span class="i18n-zh">方向键 / WASD / 触屏滑动</span
+              ><span class="i18n-en"> arrow keys / WASD / swipe</span>
+            </p>
+            <p>
+              <b><span class="i18n-zh">倒带：</span><span class="i18n-en">Rewind:</span></b
+              ><span class="i18n-zh">长按 <span class="kbd">空格</span> 或右下角「按住倒带」按钮，蛇会沿轨迹回放，免疫撞墙撞身</span
+              ><span class="i18n-en"
+                >hold <span class="kbd">Space</span> or the "Hold" button — the snake replays its own
+                trail and ignores walls and its own body</span
+              >
+            </p>
+            <p>
+              <b><span class="i18n-zh">冲刺：</span><span class="i18n-en">Boost:</span></b
+              ><span class="i18n-zh">按住 <span class="kbd">Shift</span> 或「⚡冲刺」加速狂吃，但会<span class="chip danger">燃烧能量</span>——冲得越快，回退的余地越少</span
+              ><span class="i18n-en"
+                >hold <span class="kbd">Shift</span> or "⚡Boost" to sprint, but it
+                <span class="chip danger">burns energy</span> — the faster you go, the less you can
+                take back</span
+              >
+            </p>
+            <p>
+              <b><span class="i18n-zh">倒带能量：</span><span class="i18n-en">Rewind energy:</span></b
+              ><span class="i18n-zh">开局自带，吃<span class="chip golden">金色能量果</span>补充。吃到普通果实触发<span class="chip">连击</span>翻倍得分</span
+              ><span class="i18n-en"
+                >you start with some; eat a <span class="chip golden">golden orb</span> to refill.
+                Normal fruit triggers <span class="chip">chain</span> multipliers</span
+              >
+            </p>
+            <p>
+              <b><span class="i18n-zh">成长：</span><span class="i18n-en">Growth:</span></b
+              ><span class="i18n-zh">每吃掉 <span class="chip">10</span> 颗果实弹出一次三选一强化；越到后段越可能遇见 <span class="chip golden">稀有</span>强化</span
+              ><span class="i18n-en"
+                >every <span class="chip">10</span> fruit you pick 1 of 3 upgrades; deeper runs can
+                roll <span class="chip golden">rare</span> ones</span
+              >
+            </p>
+            <p>
+              <b><span class="i18n-zh">暂停：</span><span class="i18n-en">Pause:</span></b
+              ><span class="kbd">P</span> / <span class="kbd">Esc</span
+              ><span class="i18n-zh"> / 右上角按钮</span
+              ><span class="i18n-en"> / top-right button</span>
+            </p>
           </div>
         </div>
       </section>
@@ -83,15 +174,26 @@
       <!-- 暂停 -->
       <section id="pause" class="overlay hidden">
         <div class="panel small">
-          <h2>暂停</h2>
-          <p class="stat-line" id="pause-info">得分 0 · 等级 1 · 能量 0/90</p>
+          <h2><span class="i18n-zh">暂停</span><span class="i18n-en">Paused</span></h2>
+          <p class="stat-line" id="pause-info">
+            <span class="i18n-zh">得分 0 · 等级 1 · 能量 0/90</span
+            ><span class="i18n-en">Score 0 · Level 1 · Energy 0/90</span>
+          </p>
           <div class="btn-row">
-            <button id="btn-resume" class="btn primary" type="button">继续</button>
-            <button id="btn-restart" class="btn" type="button">重新开始</button>
-            <button id="btn-menu" class="btn ghost" type="button">回到菜单</button>
+            <button id="btn-resume" class="btn primary" type="button">
+              <span class="i18n-zh">继续</span><span class="i18n-en">Resume</span>
+            </button>
+            <button id="btn-restart" class="btn" type="button">
+              <span class="i18n-zh">重新开始</span><span class="i18n-en">Restart</span>
+            </button>
+            <button id="btn-menu" class="btn ghost" type="button">
+              <span class="i18n-zh">回到菜单</span><span class="i18n-en">Menu</span>
+            </button>
           </div>
           <div class="btn-row slim">
-            <button id="btn-sound-pause" class="btn ghost" type="button">音效：开</button>
+            <button id="btn-sound-pause" class="btn ghost" type="button">
+              <span class="i18n-zh">音效：开</span><span class="i18n-en">Sound: On</span>
+            </button>
           </div>
         </div>
       </section>
@@ -99,43 +201,84 @@
       <!-- 结算 -->
       <section id="over" class="overlay hidden">
         <div class="panel small">
-          <h2 id="over-title">游戏结束</h2>
-          <p class="score-line">得分 <span id="over-score">0</span></p>
+          <h2 id="over-title">
+            <span class="i18n-zh">游戏结束</span><span class="i18n-en">Game Over</span>
+          </h2>
+          <p class="score-line">
+            <span class="i18n-zh">得分 </span><span class="i18n-en">Score </span
+            ><span id="over-score">0</span>
+          </p>
           <p class="best-line">
-            最高分 <span id="over-best">0</span>
-            <span id="over-record" class="record hidden">新纪录！</span>
+            <span class="i18n-zh">最高分 </span><span class="i18n-en">Best </span
+            ><span id="over-best">0</span>
+            <span id="over-record" class="record hidden"
+              ><span class="i18n-zh">新纪录！</span><span class="i18n-en">New record!</span></span
+            >
           </p>
           <p class="over-hint" id="over-hint"></p>
-          <p class="stat-line">吃到果实 <span id="over-foods">0</span> · 等级 <span id="over-level">1</span> · 最高连击 x<span id="over-chain">1</span></p>
-          <p class="gold-stat">金色能量果 ×<span id="over-gold">0</span></p>
+          <p class="stat-line">
+            <span class="i18n-zh">吃到果实 </span><span class="i18n-en">Fruit </span
+            ><span id="over-foods">0</span><span class="i18n-zh"> · 等级 </span
+            ><span class="i18n-en"> · Level </span><span id="over-level">1</span
+            ><span class="i18n-zh"> · 最高连击 x</span
+            ><span class="i18n-en"> · Best chain x</span><span id="over-chain">1</span>
+          </p>
+          <p class="gold-stat">
+            <span class="i18n-zh">金色能量果 ×</span><span class="i18n-en">Golden orbs ×</span
+            ><span id="over-gold">0</span>
+          </p>
           <p class="buff-line hidden" id="over-buffs"></p>
           <div class="btn-row">
-            <button id="btn-retry" class="btn primary" type="button">再来一局</button>
-            <button id="btn-over-share" class="btn" type="button">分享给朋友</button>
-            <button id="btn-over-menu" class="btn ghost" type="button">回到菜单</button>
+            <button id="btn-retry" class="btn primary" type="button">
+              <span class="i18n-zh">再来一局</span><span class="i18n-en">Play again</span>
+            </button>
+            <button id="btn-over-share" class="btn" type="button">
+              <span class="i18n-zh">分享给朋友</span><span class="i18n-en">Share</span>
+            </button>
+            <button id="btn-over-menu" class="btn ghost" type="button">
+              <span class="i18n-zh">回到菜单</span><span class="i18n-en">Menu</span>
+            </button>
           </div>
         </div>
       </section>
 
       <!-- 单局成长（三选一强化） -->
-      <section id="pick" class="overlay hidden" role="dialog" aria-label="选择成长强化">
+      <section id="pick" class="overlay hidden" role="dialog" aria-label="Choose an upgrade">
         <div class="panel small pick-panel">
-          <h2>成长强化</h2>
-          <p class="pick-sub">吞下一份力量，继续前行</p>
+          <h2><span class="i18n-zh">成长强化</span><span class="i18n-en">Upgrade</span></h2>
+          <p class="pick-sub">
+            <span class="i18n-zh">吞下一份力量，继续前行</span
+            ><span class="i18n-en">Swallow a power and keep going</span>
+          </p>
           <div id="pick-cards" class="pick-cards"></div>
-          <p class="pick-hint">按 <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> 或点击卡片选择</p>
+          <p class="pick-hint">
+            <span class="i18n-zh">按 </span><span class="i18n-en">Press </span
+            ><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span
+            ><span class="i18n-zh"> 或点击卡片选择</span
+            ><span class="i18n-en"> or click a card</span>
+          </p>
         </div>
       </section>
 
-      <!-- 分享海报（结算 / 菜单共用弹层：长按保存识别，或复制链接） -->
-      <section id="share" class="overlay hidden" role="dialog" aria-label="分享海报">
+      <!-- 分享海报（结算 / 菜单共用弹层：长按保存识别，或复制链接）
+           仅中文环境且非 itch 域启用（见 src/ui/ui.ts） -->
+      <section id="share" class="overlay hidden" role="dialog" aria-label="Share">
         <div class="panel small share-panel">
-          <h2>分享给朋友</h2>
-          <img id="share-poster" class="share-poster" alt="ECHO 回声贪吃蛇分享海报" draggable="false" />
-          <p class="share-tip">长按图片保存 / 识别二维码，发给朋友即点即玩；或复制链接分享。</p>
+          <h2><span class="i18n-zh">分享给朋友</span><span class="i18n-en">Share</span></h2>
+          <img id="share-poster" class="share-poster" alt="ECHO share poster" draggable="false" />
+          <p class="share-tip">
+            <span class="i18n-zh">长按图片保存 / 识别二维码，发给朋友即点即玩；或复制链接分享。</span
+            ><span class="i18n-en"
+              >Save the image or scan the QR code to send to a friend; or copy the link.</span
+            >
+          </p>
           <div class="btn-row">
-            <button id="btn-share-copy" class="btn primary" type="button">复制链接</button>
-            <button id="btn-share-close" class="btn ghost" type="button">关闭</button>
+            <button id="btn-share-copy" class="btn primary" type="button">
+              <span class="i18n-zh">复制链接</span><span class="i18n-en">Copy link</span>
+            </button>
+            <button id="btn-share-close" class="btn ghost" type="button">
+              <span class="i18n-zh">关闭</span><span class="i18n-en">Close</span>
+            </button>
           </div>
         </div>
       </section>
